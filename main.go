@@ -26,7 +26,7 @@ type Config struct {
 
 func setupLogRotation(file string, rotationTime time.Duration, maxSize int64) (writer *rotatelogs.RotateLogs, err error) {
 	hook, err := rotatelogs.New(
-		file+".%Y%m%d%H%M%S",
+		file+".%Y%m%d",
 		rotatelogs.WithRotationTime(rotationTime),
 		rotatelogs.WithLinkName(file),        // symlink current log file
 		rotatelogs.WithRotationCount(10),     // keep 5 old log files
@@ -97,27 +97,27 @@ func main() {
 	defer ticker.Stop()
 	for range ticker.C {
 
-		info, err := redisC.GetInfo("cpu", map[string]string{
-			"used_cpu_sys":  "float",
-			"used_cpu_user": "float",
-		})
-		if err != nil {
-			log.Fatalf("redis get info fail %v", err)
-		}
+		// info, err := redisC.GetInfo("cpu", map[string]string{
+		// 	"used_cpu_sys":  "float",
+		// 	"used_cpu_user": "float",
+		// })
+		// if err != nil {
+		// 	log.Fatalf("redis get info fail %v", err)
+		// }
 
-		used_cpu_sys := (info["used_cpu_sys"]).(float64)
-		log.Printf("used_cpu_sys: %f\n", used_cpu_sys)
-		used_cpu_user := (info["used_cpu_user"]).(float64)
-		log.Printf("used_cpu_user: %f\n", used_cpu_user)
-		cpus := latte_lib.IoStat(config.Pid)
-		log.Printf("sysCpu %f userCpu %f", cpus["total_sys_cpu"], cpus["total_user_cpu"])
+		// used_cpu_sys := (info["used_cpu_sys"]).(float64)
+		// log.Printf("used_cpu_sys: %f\n", used_cpu_sys)
+		// used_cpu_user := (info["used_cpu_user"]).(float64)
+		// log.Printf("used_cpu_user: %f\n", used_cpu_user)
+		cpus := latte_lib.IoStat(config.Pid, config.Time_interval-1)
+		log.Printf("sysCpu %f userCpu %f totalCpu %f", cpus["sys_cpu"], cpus["user_cpu"], cpus["total_cpu"])
 
 		err = influxC.Send("k8s.cache.pid.sys_cpu", map[string]string{
 			"pid": strconv.Itoa(config.Pid),
 			"ip":  config.LocalIp,
 			"idc": "SHA-ALI",
 		}, map[string]interface{}{
-			"value": cpus["total_sys_cpu"],
+			"value": cpus["sys_cpu"],
 		})
 		if err != nil {
 			log.Printf("influx send pid sys_cpu fail: %v\n", err)
@@ -128,7 +128,18 @@ func main() {
 			"ip":  config.LocalIp,
 			"idc": "SHA-ALI",
 		}, map[string]interface{}{
-			"value": cpus["total_user_cpu"],
+			"value": cpus["user_cpu"],
+		})
+		if err != nil {
+			log.Printf("influx send pid sys_cpu fail: %v\n", err)
+		}
+
+		err = influxC.Send("k8s.cache.pid.total_cpu", map[string]string{
+			"pid": strconv.Itoa(config.Pid),
+			"ip":  config.LocalIp,
+			"idc": "SHA-ALI",
+		}, map[string]interface{}{
+			"value": cpus["total_cpu"],
 		})
 		if err != nil {
 			log.Printf("influx send pid sys_cpu fail: %v\n", err)

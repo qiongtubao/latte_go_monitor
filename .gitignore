@@ -64,3 +64,4 @@ out.svg
 out.perf-folded
 
 latte_go_monitor
+monitor.log*
