@@ -6,6 +6,7 @@
     },
     "pid": 68442,
     "local_ip": "172.29.144.65",
+    "time_interval": 10,
     "redis_config": {
         "host": "127.0.0.1",
         "port": 6666

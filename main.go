@@ -13,10 +13,11 @@ import (
 )
 
 type Config struct {
-	Monitor latte_lib.InfluxConfig `json:"monitor_config"`
-	LocalIp string                 `json:"local_ip"`
-	Pid     int                    `json:"pid"`
-	Redis   latte_lib.RedisConfig  `json:"redis_config"`
+	Monitor       latte_lib.InfluxConfig `json:"monitor_config"`
+	LocalIp       string                 `json:"local_ip"`
+	Pid           int                    `json:"pid"`
+	Time_interval int                    `json:"time_interval"`
+	Redis         latte_lib.RedisConfig  `json:"redis_config"`
 }
 
 func initLog() {
@@ -76,7 +77,7 @@ func main() {
 		log.Printf("influx init fail: %v\n", err)
 	}
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Duration(config.Time_interval) * time.Second)
 	defer ticker.Stop()
 	for range ticker.C {
 
