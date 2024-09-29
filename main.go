@@ -10,6 +10,10 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+
+	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -20,17 +24,29 @@ type Config struct {
 	Redis         latte_lib.RedisConfig  `json:"redis_config"`
 }
 
+func setupLogRotation(file string, rotationTime time.Duration, maxSize int64) (writer *rotatelogs.RotateLogs, err error) {
+	hook, err := rotatelogs.New(
+		file+".%Y%m%d%H%M%S",
+		rotatelogs.WithRotationTime(rotationTime),
+		rotatelogs.WithLinkName(file),        // symlink current log file
+		rotatelogs.WithRotationCount(10),     // keep 5 old log files
+		rotatelogs.WithRotationSize(maxSize), // max size of each log file in bytes
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create rotatelogs instance")
+	}
+
+	writer = hook
+	return
+}
 func initLog() {
 	file := "./monitor.log"
-	err := os.Remove(file)
+	writer, err := setupLogRotation(file, 48*time.Hour, 100*1024*1024)
 	if err != nil {
+		log.Fatalf("failed to set up log rotation:%v", err)
 		return
 	}
-	logFile, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
-	if err != nil {
-		panic(err)
-	}
-	log.SetOutput(logFile) // 将文件设置为log输出的文件
+	log.SetOutput(writer) // 将文件设置为log输出的文件
 	log.SetPrefix("[log]")
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.LUTC)
 }
