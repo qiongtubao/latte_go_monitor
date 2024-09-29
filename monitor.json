@@ -1,0 +1,13 @@
+{
+    "monitor_config": {
+        "url":"http://sink.hickwall.qa.nt.ctripcorp.com:80",
+        "db": "SRV-CACHE" 
+        
+    },
+    "pid": 68442,
+    "local_ip": "172.29.144.65",
+    "redis_config": {
+        "host": "127.0.0.1",
+        "port": 6666
+    }
+}
