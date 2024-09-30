@@ -48,7 +48,7 @@ func initLog() {
 	}
 	log.SetOutput(writer) // 将文件设置为log输出的文件
 	log.SetPrefix("[log]")
-	log.SetFlags(log.LstdFlags | log.Lshortfile | log.LUTC)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func main() {
@@ -90,26 +90,20 @@ func main() {
 	}
 	err = influxC.Init()
 	if err != nil {
-		log.Printf("influx init fail: %v\n", err)
+		log.Fatalf("influx init fail: %v\n", err)
 	}
 
+	p := latte_lib.LatteProcess{
+		Pid: config.Pid,
+	}
+	err = p.Init()
+	if err != nil {
+		log.Fatalf("process init fail %v\n", err)
+	}
 	ticker := time.NewTicker(time.Duration(config.Time_interval) * time.Second)
 	defer ticker.Stop()
 	for range ticker.C {
-
-		// info, err := redisC.GetInfo("cpu", map[string]string{
-		// 	"used_cpu_sys":  "float",
-		// 	"used_cpu_user": "float",
-		// })
-		// if err != nil {
-		// 	log.Fatalf("redis get info fail %v", err)
-		// }
-
-		// used_cpu_sys := (info["used_cpu_sys"]).(float64)
-		// log.Printf("used_cpu_sys: %f\n", used_cpu_sys)
-		// used_cpu_user := (info["used_cpu_user"]).(float64)
-		// log.Printf("used_cpu_user: %f\n", used_cpu_user)
-		cpus := latte_lib.IoStat(config.Pid, config.Time_interval-1)
+		cpus := p.GetCpuStats(time.Duration(config.Time_interval-1) * time.Second)
 		log.Printf("sysCpu %f userCpu %f totalCpu %f", cpus["sys_cpu"], cpus["user_cpu"], cpus["total_cpu"])
 
 		err = influxC.Send("k8s.cache.pid.sys_cpu", map[string]string{

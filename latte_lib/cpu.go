@@ -1,13 +1,5 @@
 package latte_lib
 
-import (
-	"log"
-	"runtime"
-	"time"
-
-	"github.com/shirou/gopsutil/v3/process"
-)
-
 /*
 type TimesStat struct {
 	User        float64 `json:"user"`       // 用户态消耗的时间
@@ -23,48 +15,48 @@ type TimesStat struct {
 }
 */
 
-func calculatePercent(t1, t2 float64, delta float64, numcpu int) float64 {
-	if delta == 0 {
-		return 0
-	}
-	delta_proc := t2 - t1
-	overall_percent := ((delta_proc / delta) * 100) * float64(numcpu)
-	return overall_percent
-}
+// func calculatePercent(t1, t2 float64, delta float64, numcpu int) float64 {
+// 	if delta == 0 {
+// 		return 0
+// 	}
+// 	delta_proc := t2 - t1
+// 	overall_percent := ((delta_proc / delta) * 100) * float64(numcpu)
+// 	return overall_percent
+// }
 
-func IoStat(pid int, wait int) map[string]float64 {
-	// 获取进程对象
-	p, err := process.NewProcess(int32(pid))
-	if err != nil {
-		log.Fatal(err)
-	}
-	start_now := time.Now()
-	numcpu := runtime.NumCPU()
-	// 获取第一次 CPU 时间
-	start_times, err := p.Times()
-	if err != nil {
-		log.Fatal(err)
-	}
+// func CpuStat(pid int, wait int) map[string]float64 {
+// 	// 获取进程对象
+// 	p, err := process.NewProcess(int32(pid))
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	start_now := time.Now()
+// 	numcpu := runtime.NumCPU()
+// 	// 获取第一次 CPU 时间
+// 	start_times, err := p.Times()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	// 等待一段时间
-	// sysUsage, _ := p.Percent(1 * time.Second)
-	time.Sleep(time.Duration(wait) * time.Second)
+// 	// 等待一段时间
+// 	// sysUsage, _ := p.Percent(1 * time.Second)
+// 	time.Sleep(time.Duration(wait) * time.Second)
 
-	// 获取第二次 CPU 时间
-	end_times, err := p.Times()
-	if err != nil {
-		log.Fatal(err)
-	}
-	now := time.Now()
-	delta := (now.Sub(start_now).Seconds()) * float64(numcpu)
-	// 计算用户态和内核态的 CPU 使用率
-	userCpuUsage := calculatePercent(start_times.User, end_times.User, delta, numcpu)
-	systemCpuUsage := calculatePercent(start_times.System, end_times.System, delta, numcpu)
-	totalCpuUsage := calculatePercent(start_times.Total(), end_times.Total(), delta, numcpu)
-	// log.Printf("user usage %f sys usage %f  psys usage %f", userCpuUsage, systemCpuUsage, sysUsage)
-	return map[string]float64{
-		"sys_cpu":   systemCpuUsage,
-		"user_cpu":  userCpuUsage,
-		"total_cpu": totalCpuUsage,
-	}
-}
+// 	// 获取第二次 CPU 时间
+// 	end_times, err := p.Times()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	now := time.Now()
+// 	delta := (now.Sub(start_now).Seconds()) * float64(numcpu)
+// 	// 计算用户态和内核态的 CPU 使用率
+// 	userCpuUsage := calculatePercent(start_times.User, end_times.User, delta, numcpu)
+// 	systemCpuUsage := calculatePercent(start_times.System, end_times.System, delta, numcpu)
+// 	totalCpuUsage := calculatePercent(start_times.Total(), end_times.Total(), delta, numcpu)
+// 	// log.Printf("user usage %f sys usage %f  psys usage %f", userCpuUsage, systemCpuUsage, sysUsage)
+// 	return map[string]float64{
+// 		"sys_cpu":   systemCpuUsage,
+// 		"user_cpu":  userCpuUsage,
+// 		"total_cpu": totalCpuUsage,
+// 	}
+// }
