@@ -138,6 +138,11 @@ func main() {
 		if err != nil {
 			log.Printf("influx send pid sys_cpu fail: %v\n", err)
 		}
+
+		err = redisC.CheckClientList()
+		if err != nil {
+			log.Printf("check client list fail: %v\n", err)
+		}
 	}
 
 }

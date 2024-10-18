@@ -19,9 +19,10 @@ type RedisConfig struct {
 }
 
 type RedisClient struct {
-	Addr     string
-	PoolSize int
-	client   *redis.Client
+	Addr                string
+	PoolSize            int
+	client              *redis.Client
+	current_client_list map[string]int
 }
 
 func (r *RedisClient) Init() {
@@ -31,6 +32,7 @@ func (r *RedisClient) Init() {
 		DB:       0,
 		PoolSize: r.PoolSize,
 	})
+	r.current_client_list = nil
 }
 
 func getStringInfoAttributes(infoContent string, key string) ([]string, error) {
@@ -107,4 +109,64 @@ func (r *RedisClient) GetInfo(key string, fields map[string]string) (map[string]
 	}
 	defer cancel()
 	return result, nil
+}
+
+func parseClientList(clientList string) map[string]int {
+	var ipPorts map[string]int = map[string]int{}
+	lines := strings.Split(clientList, "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "id=") {
+			parts := strings.Fields(line)
+			for _, part := range parts {
+				if strings.HasPrefix(part, "addr=") {
+					ipPort := strings.TrimPrefix(part, "addr=")
+					ipPorts[ipPort] = 1
+				}
+			}
+		}
+	}
+	return ipPorts
+}
+
+func (r *RedisClient) GetClientList() (map[string]int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	clientList, err := r.client.ClientList(ctx).Result()
+	if err != nil {
+		log.Fatalf("redis get info fail %v", err)
+		return nil, err
+	}
+	defer cancel()
+	return parseClientList(clientList), nil
+}
+
+func (r *RedisClient) CheckClientList() error {
+	client_list, err := r.GetClientList()
+	if nil != err {
+		return err
+	}
+	if nil == r.current_client_list {
+		log.Printf("current_client_list init  %v\n", client_list)
+		r.current_client_list = client_list
+		return nil
+	}
+	// if len(client_list) != len(r.current_client_list) {
+	// 	log.Printf()
+	// }
+	diffMap := map[string]int{}
+	for k, _ := range r.current_client_list {
+		diffMap[k] = 0
+	}
+	for k, _ := range client_list {
+		if _, exists := diffMap[k]; exists {
+			delete(diffMap, k)
+		} else {
+			diffMap[k] = 2
+		}
+	}
+	r.current_client_list = client_list
+	if len(diffMap) == 0 {
+		return nil
+	}
+	log.Printf("diff map = %v\n", diffMap)
+	return nil
 }
